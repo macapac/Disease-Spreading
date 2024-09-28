@@ -38,17 +38,20 @@ def solve_model_RK45(model, N, I0, T, include_R=False):
 
     max_stepsize = 0.1
 
+    # Initialising the lists that store the results
+    times = []
+    S_vals = []
+    I_vals = []
+
     if include_R:
         y0 = [S0, I0, 0]
-
-        # Initialising the lists that store the results
-        times = []
-        S_vals = []
-        I_vals = []
         R_vals = []
+    else:
+        y0 = [S0, I0]
 
-        solver = RK45(model, 0, y0=y0, t_bound=T, max_step=max_stepsize)  # initialising the Runge-Kutta solver
+    solver = RK45(model, 0, y0=y0, t_bound=T, max_step=max_stepsize)  # initialising the Runge-Kutta solver
 
+    if include_R:
         while solver.status == 'running':  # needed because apparently this solver doesn't run itself
             solver.step()
 
@@ -61,16 +64,8 @@ def solve_model_RK45(model, N, I0, T, include_R=False):
 
         return times, S_vals, I_vals, R_vals
 
+
     else:
-        y0 = [S0, I0]
-
-        # Initialising the lists that store the results
-        times = []
-        S_vals = []
-        I_vals = []
-
-        solver = RK45(model, 0, y0=y0, t_bound=T)  # initialising the Runge-Kutta solver
-
         while solver.status == 'running':  # needed because apparently this solver doesn't run itself
             solver.step()
 
