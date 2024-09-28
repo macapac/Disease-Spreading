@@ -46,6 +46,7 @@ def solve_model_RK45(model, N, I0, T, include_R=False):
     if include_R:
         y0 = [S0, I0, 0]
         R_vals = []
+
     else:
         y0 = [S0, I0]
 
@@ -85,7 +86,10 @@ def plot_SIR(times, S_vals, I_vals, R_vals = None):
     plt.xlabel('Time')
     plt.ylabel('Population')
     plt.legend()
-    plt.title('SIS Model Using RK45')
+    if R_vals:
+        plt.title('SIR Model Using RK45')
+    else:
+        plt.title('SIS Model Using RK45')
     plt.show()
 
 if __name__ == '__main__':
