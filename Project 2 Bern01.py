@@ -1,4 +1,6 @@
 from scipy.integrate import RK45
+from scipy.integrate import RK23
+from scipy.integrate import DOP853
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -154,7 +156,74 @@ def solve_model_RK45(model, N, I0, T, include_R=False, cities=1):
     else:
         return times, (S1_vals, I1_vals, R1_vals), (S2_vals, I2_vals, R2_vals), (S3_vals, I3_vals, R3_vals)
 
+def solve_model(model, N, I0, T, include_R=False, cities=1, solver=None):
+    if cities == 1:
+        S0 = N - I0  # Number of original susceptible
+        if include_R:
+            y0 = [S0, I0, 0]  # Initial state (S, I, R)
+        else:
+            y0 = [S0, I0]  # Initial state (S, I)
+    else:
+        # For the sir_with_mobility model, initial states for multiple cities
+        S1, S2, S3 = (N - I0) // 3, (N - I0) // 3, (N - I0) // 3  # Dividing population across cities
+        I1, I2, I3 = I0 // 3, I0 // 3, I0 // 3
+        y0 = [S1, I1, 0, S2, I2, 0, S3, I3, 0]  # Initial state for multiple cities
 
+    max_stepsize = 0.01
+
+    # Initialize lists to store results
+    times = []
+    if cities == 1:
+        S_vals = []
+        I_vals = []
+        R_vals = [] if include_R else None
+    else:
+        S1_vals, I1_vals, R1_vals = [], [], []
+        S2_vals, I2_vals, R2_vals = [], [], []
+        S3_vals, I3_vals, R3_vals = [], [], []
+
+    # Initialize the solver
+    if solver == 'RK45':
+        solver = RK45(model, 0, y0=y0, t_bound=T, max_step=max_stepsize)
+    elif solver == 'DOP853':
+        solver = DOP853(model, 0, y0=y0, t_bound=T, max_step=max_stepsize)
+    else:
+        solver = RK23(model, 0, y0=y0, t_bound=T, max_step=max_stepsize)
+
+
+    while solver.status == 'running':
+        solver.step()
+        times.append(solver.t)
+        if cities == 1:
+            if include_R:
+                S, I, R = solver.y
+                S_vals.append(S)
+                I_vals.append(I)
+                R_vals.append(R)
+            else:
+                S, I = solver.y
+                S_vals.append(S)
+                I_vals.append(I)
+        else:
+            S1, I1, R1, S2, I2, R2, S3, I3, R3 = solver.y
+            S1_vals.append(S1)
+            I1_vals.append(I1)
+            R1_vals.append(R1)
+            S2_vals.append(S2)
+            I2_vals.append(I2)
+            R2_vals.append(R2)
+            S3_vals.append(S3)
+            I3_vals.append(I3)
+            R3_vals.append(R3)
+
+    if cities == 1:
+        # return times, S_vals, I_vals, R_vals if include_R else None
+        if include_R:
+            return times, S_vals, I_vals, R_vals
+        else:
+            return times, S_vals, I_vals
+    else:
+        return times, (S1_vals, I1_vals, R1_vals), (S2_vals, I2_vals, R2_vals), (S3_vals, I3_vals, R3_vals)
 
 def plot_SIR(times, S_vals, I_vals, R_vals = None):
 
@@ -170,8 +239,6 @@ def plot_SIR(times, S_vals, I_vals, R_vals = None):
     else:
         plt.title('SIS Model Using RK45')
     plt.show()
-
-
 
 def plot_SIR_multiple_cities(times, city1_data, city2_data, city3_data):
     S1_vals, I1_vals, R1_vals = city1_data
@@ -208,16 +275,17 @@ if __name__ == '__main__':
     I0 = 10  # Number of original infected
     T = 80 # Number of iterations
 
-    sis_times, sis_S, sis_I = solve_model_RK45(sis_model, N, I0, T, include_R=False)
+    '''sis_times, sis_S, sis_I = solve_model_RK45(sis_model, N, I0, T, include_R=False)
 
     plot_SIR(sis_times, sis_S, sis_I)
 
     sir_times, sir_S, sir_I, sir_R = solve_model_RK45(sir_model, N, I0, T, include_R=True)
 
-    plot_SIR(sir_times, sir_S, sir_I, sir_R)
+    plot_SIR(sir_times, sir_S, sir_I, sir_R)'''
 
     # plot of cities
-    times, city1_data, city2_data, city3_data = solve_model_RK45(sir_with_mobility, N, I0, T, include_R=True, cities=3)
+    # use solver ='DOP853' or ='RK45' or ='RK23'
+    times, city1_data, city2_data, city3_data = solve_model(sir_with_mobility, N, I0, T, include_R=True, cities=3, solver='DOP853')
 
     plot_SIR_multiple_cities(times, city1_data, city2_data, city3_data)
 
