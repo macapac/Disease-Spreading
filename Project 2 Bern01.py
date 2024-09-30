@@ -198,6 +198,7 @@ if __name__ == '__main__':
 
     plot_SIR(sir_times, sir_S, sir_I, sir_R)
 
+    # plot of cities
     times, city1_data, city2_data, city3_data = solve_model_RK45(sir_with_mobility, N, I0, T, include_R=True, cities=3)
 
     plot_SIR_multiple_cities(times, city1_data, city2_data, city3_data)
