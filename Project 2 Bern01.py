@@ -34,9 +34,10 @@ def sir_model(t, y):
     return dS_dt, dI_dt, dR_dt
 
 def sir_with_mobility(t, y):
-    beta = 0.8  # Infection rate
-    alpha = 0.1  # Recovery rate
+    beta = 0.6  # Infection rate
+    alpha = 0.05  # Recovery rate
     gamma = 0.005  # Vaccination rate
+    LOCKDOWN_THRESHOLD = 1.10  # 10% infection threshold for lockdown
 
     # y = [S1, I1, R1, S2, I2, R2, S3, I3, R3]
     S1, I1, R1, S2, I2, R2, S3, I3, R3 = y
@@ -58,9 +59,26 @@ def sir_with_mobility(t, y):
     dI3_dt = (beta * S3 * I3 / N3) - alpha * I3  # Infected in city 3
     dR3_dt = gamma * S3 + alpha * I3  # Recovered in city 3
 
-    travel_rates = np.array([[0, 0.0, 0.0],  # City 1 to others
-                                [0.0, 0, 0.0],  # City 2 to others
-                                [0.0, 0.05, 0]])
+    if t % 2 == 0:  # (morning, 0-12 hours)
+        travel_rates = np.array([[0, 0.01, 0.05],  # to City 1
+                                [0.005, 0, 0.05],  # to City 2
+                                [0.005, 0.0, 0]])  # to City 3
+    else:  # (evening, 12-24 hours)
+        travel_rates = np.array([[0, 0.005, 0.005],  # to City 1
+                                 [0.1, 0, 0.0],  # to City 2
+                                 [0.05, 0.05, 0]])
+
+    if I1 / N1 > LOCKDOWN_THRESHOLD:
+        travel_rates[0, :] = 0  # City 1 lockdown: no one leaves or enters
+        travel_rates[:, 0] = 0  # No one can enter city 1
+
+    if I2 / N2 > LOCKDOWN_THRESHOLD:
+        travel_rates[1, :] = 0  # City 2 lockdown: no one leaves or enters
+        travel_rates[:, 1] = 0  # No one can enter city 2
+
+    if I3 / N3 > LOCKDOWN_THRESHOLD:
+        travel_rates[2, :] = 0  # City 3 lockdown: no one leaves or enters
+        travel_rates[:, 2] = 0  # No one can enter city
 
     # Movement between cities (travel_rates define movement proportions between cities)
     # This models the exchange of populations between cities
@@ -188,7 +206,7 @@ def plot_SIR_multiple_cities(times, city1_data, city2_data, city3_data):
 if __name__ == '__main__':
     N = 10000  # Number of inhabitants (of only one city for now)
     I0 = 10  # Number of original infected
-    T = 50 # Number of iterations
+    T = 80 # Number of iterations
 
     sis_times, sis_S, sis_I = solve_model_RK45(sis_model, N, I0, T, include_R=False)
 
