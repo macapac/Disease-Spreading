@@ -1,6 +1,7 @@
 from scipy.integrate import RK45
 from scipy.integrate import RK23
 from scipy.integrate import DOP853
+from matplotlib.animation import FuncAnimation
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -269,9 +270,99 @@ def plot_SIR_multiple_cities(times, city1_data, city2_data, city3_data):
     plt.tight_layout(rect=[0, 0, 0.95, 1])
     plt.show()
 
+def animate_SIR_multiple_cities(times, city1_data, city2_data, city3_data):
+    def round_nested_tuple(tuple_of_lists): # Quick helper function to round to intigers
+        return tuple([
+            [round(num) for num in inner_list]
+            for inner_list in tuple_of_lists
+        ])
+
+    S1_vals, I1_vals, R1_vals = round_nested_tuple(city1_data)
+    S2_vals, I2_vals, R2_vals = round_nested_tuple(city2_data)
+    S3_vals, I3_vals, R3_vals = round_nested_tuple(city3_data)
+
+    # Create figure and axes
+    fig, ax = plt.subplots(figsize=(8, 8))
+
+    # Set limits for city boundaries
+    ax.set_xlim(0, 3)
+    ax.set_ylim(0, 3)
+
+    ax.set_axis_off()
+    # Define colors for S, I, and R
+    S_color = 'blue'
+    I_color = 'red'
+    R_color = 'green'
+
+    # Function to precompute the grid positions
+    def place_in_grid(max_people, x_start, x_end, y_start, y_end):
+        """Place dots in a grid layout within the given city bounds."""
+        rows = int(np.sqrt(max_people))  # Create a square-like grid
+        cols = (max_people // rows) + 1
+        x_positions = np.linspace(x_start + 0.1, x_end - 0.1, cols)
+        y_positions = np.linspace(y_start + 0.1, y_end - 0.1, rows)
+        grid_x, grid_y = np.meshgrid(x_positions, y_positions)
+        return grid_x.flatten(), grid_y.flatten()
+
+    # Precompute maximum population
+    max_num = max(max(max(S1_vals),max(S2_vals),max(S3_vals)), max(max(I1_vals),max(I2_vals),max(I3_vals)), max(max(R1_vals),max(R2_vals),max(R3_vals)))
+
+    x1_S, y1_S = place_in_grid(max_num, 0, 1, 2, 3)
+    x1_I, y1_I = place_in_grid(max_num, 0, 1, 1, 2)
+    x1_R, y1_R = place_in_grid(max_num, 0, 1, 0, 1)
+
+    x2_S, y2_S = place_in_grid(max_num, 1, 2, 2, 3)
+    x2_I, y2_I = place_in_grid(max_num, 1, 2, 1, 2)
+    x2_R, y2_R = place_in_grid(max_num, 1, 2, 0, 1)
+
+    x3_S, y3_S = place_in_grid(max_num, 2, 3, 2, 3)
+    x3_I, y3_I = place_in_grid(max_num, 2, 3, 1, 2)
+    x3_R, y3_R = place_in_grid(max_num, 2, 3, 0, 1)
+
+    # Update function for animation
+    def update(frame):
+        ax.clear()
+
+        # Set limits for city boundaries
+        ax.set_xlim(0, 3)
+        ax.set_ylim(0, 3)
+        ax.set_axis_off()
+
+        # Draw city boundaries
+        ax.plot([1, 1], [0, 3], color='black', linewidth=1.5)  # Boundary between city 1 and city 2
+        ax.plot([2, 2], [0, 3], color='black', linewidth=1.5)  # Boundary between city 2 and city 3
+
+        # Get current population values
+        S1, I1, R1 = S1_vals[frame], I1_vals[frame], R1_vals[frame]
+        S2, I2, R2 = S2_vals[frame], I2_vals[frame], R2_vals[frame]
+        S3, I3, R3 = S3_vals[frame], I3_vals[frame], R3_vals[frame]
+
+        # Plot City 1
+        ax.scatter(x1_S[:S1], y1_S[:S1], color=S_color, s=10)
+        ax.scatter(x1_I[:I1], y1_I[:I1], color=I_color, s=10)
+        ax.scatter(x1_R[:R1], y1_R[:R1], color=R_color, s=10)
+
+        # Plot City 2
+        ax.scatter(x2_S[:S2], y2_S[:S2], color=S_color, s=10)
+        ax.scatter(x2_I[:I2], y2_I[:I2], color=I_color, s=10)
+        ax.scatter(x2_R[:R2], y2_R[:R2], color=R_color, s=10)
+
+        # Plot City 3
+        ax.scatter(x3_S[:S3], y3_S[:S3], color=S_color, s=10)
+        ax.scatter(x3_I[:I3], y3_I[:I3], color=I_color, s=10)
+        ax.scatter(x3_R[:R3], y3_R[:R3], color=R_color, s=10)
+
+        # Add titles and labels
+        ax.set_title(f'Time: {times[frame]:.2f}')
+
+    # Create animation
+    ani = FuncAnimation(fig, update, frames=len(times), interval=100, repeat=False)
+
+    # Show the plot
+    plt.show()
 
 if __name__ == '__main__':
-    N = 10000  # Number of inhabitants (of only one city for now)
+    N = 1000  # Number of inhabitants
     I0 = 10  # Number of original infected
     T = 80 # Number of iterations
 
@@ -289,3 +380,4 @@ if __name__ == '__main__':
 
     plot_SIR_multiple_cities(times, city1_data, city2_data, city3_data)
 
+    animate_SIR_multiple_cities(times, city1_data, city2_data, city3_data)
