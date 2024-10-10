@@ -13,20 +13,20 @@ Your job is:
 
 Realistic Parameters:
 
-α = 0.33 (for all 3 cities)
+α: 0.33 (for all 3 cities)
 
 New York:
-β = 0.60
+β: 0.60
 N: 19.84 million
-I₀ : 1984
+I₀: 1984
 
 California:
-β = 0.53
+β: 0.53
 N: 39.14 million
-I₀ 3914
+I₀: 3914
 
 Texas:
-β = 0.47
+β: 0.47
 N: 30.03 million
 I₀: 3003
 
