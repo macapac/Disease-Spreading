@@ -13,12 +13,21 @@ Your job is:
 
 Realistic Parameters:
 
-α = 0.33, infectious period (how long they’re contagious for) is about 3 days based on CDC guidelines and research on flu transmission.
+α = 0.33 (for all 3 cities)
 
-New York β = 0.60
+New York:
+β = 0.60
+N: 19.84 million
+I₀ : 1984
 
-California β = 0.53
+California:
+β = 0.53
+N: 39.14 million
+I₀ 3914
 
-Texas β = 0.47
+Texas:
+β = 0.47
+N: 30.03 million
+I₀: 3003
 
-Vaccination 40%-55%
+Vaccination 40%-55%: so does that mean we will use 0.475 for gamma?
