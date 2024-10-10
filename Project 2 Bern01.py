@@ -37,10 +37,15 @@ def sir_model(t, y):
     return dS_dt, dI_dt, dR_dt
 
 
-def sir_with_mobility(t, y):
-    beta = 0.5  # Infection rate
-    alpha = 0.1  # Recovery rate
-    gamma = 0.05  # Vaccination rate
+def sir_with_mobility(t, y, *args):
+
+    alpha1, alpha2, alpha3 = alpha # [0.33, 0.33, 0.33]
+    beta1, beta2, beta3 = beta # [0.6, 0.53, 0.47]
+    gamma1, gamma2, gamma3 = gamma # [0.05, 0.05, 0.05]
+
+    # beta = 0.5
+    # alpha = 0.1
+    # gamma = 0.05
     LOCKDOWN_THRESHOLD = 0.1  # 10% infection threshold for lockdown
 
     # y = [S1, I1, R1, S2, I2, R2, S3, I3, R3]
@@ -51,17 +56,17 @@ def sir_with_mobility(t, y):
     N3 = S3 + I3 + R3
 
     # Infection rates and recovery for each city
-    dS1_dt = (-beta * S1 * I1 / N1) - gamma * S1  # Susceptible in city 1
-    dI1_dt = (beta * S1 * I1 / N1) - alpha * I1  # Infected in city 1
-    dR1_dt = gamma * S1 + alpha * I1  # Recovered in city 1
+    dS1_dt = (-beta1 * S1 * I1 / N1) - gamma1 * S1  # Susceptible in city 1
+    dI1_dt = (beta1 * S1 * I1 / N1) - alpha1 * I1  # Infected in city 1
+    dR1_dt = gamma1 * S1 + alpha1 * I1  # Recovered in city 1
 
-    dS2_dt = (-beta * S2 * I2 / N2) - gamma * S2  # Susceptible in city 2
-    dI2_dt = (beta * S2 * I2 / N2) - alpha * I2  # Infected in city 2
-    dR2_dt = gamma * S2 + alpha * I2  # Recovered in city 2
+    dS2_dt = (-beta2 * S2 * I2 / N2) - gamma2 * S2  # Susceptible in city 2
+    dI2_dt = (beta2 * S2 * I2 / N2) - alpha2 * I2  # Infected in city 2
+    dR2_dt = gamma2 * S2 + alpha2 * I2  # Recovered in city 2
 
-    dS3_dt = (-beta * S3 * I3 / N3) - gamma * S3  # Susceptible in city 3
-    dI3_dt = (beta * S3 * I3 / N3) - alpha * I3  # Infected in city 3
-    dR3_dt = gamma * S3 + alpha * I3  # Recovered in city 3
+    dS3_dt = (-beta3 * S3 * I3 / N3) - gamma3 * S3  # Susceptible in city 3
+    dI3_dt = (beta3 * S3 * I3 / N3) - alpha3 * I3  # Infected in city 3
+    dR3_dt = gamma3 * S3 + alpha3 * I3  # Recovered in city 3
 
     if t % 2 == 0:  # (morning, 0-12 hours)
         travel_rates = np.array([[0, 0.1, 0.05],  # to City 1
@@ -95,7 +100,11 @@ def sir_with_mobility(t, y):
 
     return [dS1_dt, dI1_dt, dR1_dt, dS2_dt, dI2_dt, dR2_dt, dS3_dt, dI3_dt, dR3_dt]
 
-def solve_model_RK45(model, N, I0, T, include_R=False, cities=1):
+
+def solve_model(model, alpha, beta, gamma, N, I0, T, include_R=False, cities=1, solver=None):
+    '''
+    If using 3 cities, N and I0 need to be lists, 3 long
+    '''
     if cities == 1:
         S0 = N - I0  # Number of original susceptible
         if include_R:
@@ -104,78 +113,11 @@ def solve_model_RK45(model, N, I0, T, include_R=False, cities=1):
             y0 = [S0, I0]  # Initial state (S, I)
     else:
         # For the sir_with_mobility model, initial states for multiple cities
-        S1, S2, S3 = (N - I0) // 3, (N - I0) // 3, (N - I0) // 3  # Dividing population across cities
-        I1, I2, I3 = I0 // 3, I0 // 3, I0 // 3
-        y0 = [S1, I1, 0, S2, I2, 0, S3, I3, 0]  # Initial state for multiple cities
-
-    max_stepsize = 0.1
-
-    # Initialize lists to store results
-    times = []
-    if cities == 1:
-        S_vals = []
-        I_vals = []
-        R_vals = [] if include_R else None
-    else:
-        S1_vals, I1_vals, R1_vals = [], [], []
-        S2_vals, I2_vals, R2_vals = [], [], []
-        S3_vals, I3_vals, R3_vals = [], [], []
-
-    # Initialize the solver
-    solver = RK45(model, 0, y0=y0, t_bound=T, max_step=max_stepsize)
-
-    while solver.status == 'running':
-        solver.step()
-        times.append(solver.t)
-        if cities == 1:
-            if include_R:
-                S, I, R = solver.y
-                S_vals.append(S)
-                I_vals.append(I)
-                R_vals.append(R)
-            else:
-                S, I = solver.y
-                S_vals.append(S)
-                I_vals.append(I)
-        else:
-            S1, I1, R1, S2, I2, R2, S3, I3, R3 = solver.y
-            S1_vals.append(S1)
-            I1_vals.append(I1)
-            R1_vals.append(R1)
-            S2_vals.append(S2)
-            I2_vals.append(I2)
-            R2_vals.append(R2)
-            S3_vals.append(S3)
-            I3_vals.append(I3)
-            R3_vals.append(R3)
-
-    if cities == 1:
-        # return times, S_vals, I_vals, R_vals if include_R else None
-        if include_R:
-            return times, S_vals, I_vals, R_vals
-        else:
-            return times, S_vals, I_vals
-    else:
-        return times, (S1_vals, I1_vals, R1_vals), (S2_vals, I2_vals, R2_vals), (S3_vals, I3_vals, R3_vals)
-
-def solve_model(model, N, I0, T, include_R=False, cities=1, solver=None):
-    if cities == 1:
-        S0 = N - I0  # Number of original susceptible
-        if include_R:
-            y0 = [S0, I0, 0]  # Initial state (S, I, R)
-        else:
-            y0 = [S0, I0]  # Initial state (S, I)
-    else:
-        # For the sir_with_mobility model, initial states for multiple cities
-        # Example population sizes for three cities (S1, S2, S3):
-        pop_city1 = 15000  # Population of city 1
-        pop_city2 = 10000  # Population of city 2
-        pop_city3 = 5000  # Population of city 3
+        # Population sizes for three cities (S1, S2, S3):
+        pop_city1, pop_city2, pop_city3 = N
 
         # Initial number of infected individuals in each city:
-        inf_city1 = 5  # Infected in city 1
-        inf_city2 = 5  # Infected in city 2
-        inf_city3 = 5  # Infected in city 3
+        inf_city1, inf_city2, inf_city3 = I0
 
         # Calculation of susceptible individuals (those who are not infected or recovered yet):
         S1 = pop_city1 - inf_city1  # Susceptible individuals in city 1
@@ -252,7 +194,7 @@ def solve_model(model, N, I0, T, include_R=False, cities=1, solver=None):
     else:
         return times, (S1_vals, I1_vals, R1_vals), (S2_vals, I2_vals, R2_vals), (S3_vals, I3_vals, R3_vals)
 
-def plot_SIR(times, S_vals, I_vals, R_vals = None):
+def plot_single_city(times, S_vals, I_vals, R_vals = None):
 
     plt.plot(times, S_vals, label='Susceptible')
     plt.plot(times, I_vals, label='Infected', color='red')
@@ -262,9 +204,10 @@ def plot_SIR(times, S_vals, I_vals, R_vals = None):
     plt.ylabel('Population')
     plt.legend()
     if R_vals:
-        plt.title('SIR Model Using RK45')
+        plt.title('Time evolution of Susceptible and Infected populations for a single city')
     else:
-        plt.title('SIS Model Using RK45')
+        plt.title('Time evolution of Susceptible, Infected and Recovered populations for a single city')
+
     plt.show()
 
 def plot_SIR_multiple_cities(times, city1_data, city2_data, city3_data):
@@ -400,6 +343,12 @@ def animate_SIR_multiple_cities(times, city1_data, city2_data, city3_data):
     plt.tight_layout(rect=[0, 0, 0.95, 1])
     plt.show()
 
+def plot_step_size(times):
+    step_size = np.diff(times)
+    step_size = step_size[0:10]
+    plt.plot(step_size)
+    plt.show()
+
 if __name__ == '__main__':
     N = 30000  # Number of inhabitants (of only one city for now)
     I0 = 5  # Number of original infected
@@ -413,11 +362,19 @@ if __name__ == '__main__':
 
     plot_SIR(sir_times, sir_S, sir_I, sir_R)'''
 
-    # plot of cities
-    # use solver ='DOP853' or ='RK45' or ='RK23'
+    # For 3 cities
+    N = [19840000,39140000,30030000]
 
-    times, city1_data, city2_data, city3_data = solve_model(sir_with_mobility, N, I0, T, include_R=True, cities=3, solver='DOP853')
+    I0 = [1984, 3914, 3003]
+
+    # use solver ='DOP853' or ='RK45' or ='RK23'
+    alpha = [0.33, 0.33, 0.33]
+    beta = [0.6, 0.53, 0.47]
+    gamma = [0.05, 0.05, 0.05]
+    times, city1_data, city2_data, city3_data = solve_model(sir_with_mobility,alpha,beta,gamma, N, I0, T, include_R=True, cities=3, solver='RK45')
 
     plot_SIR_multiple_cities(times, city1_data, city2_data, city3_data)
 
-    animate_SIR_multiple_cities(times, city1_data, city2_data, city3_data)
+    # animate_SIR_multiple_cities(times, city1_data, city2_data, city3_data)
+
+    plot_step_size(times)
