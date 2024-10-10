@@ -29,5 +29,3 @@ Texas:
 β: 0.47
 N: 30.03 million
 I₀: 3003
-
-Vaccination 40%-55%: so does that mean we will use 0.475 for gamma?
