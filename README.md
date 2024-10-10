@@ -31,6 +31,6 @@ N: 30.03 million
 I₀: 3003
 
 324,153 people in the US gets vaccinated each day
-324153/333,300,000 = 0.00097
+324153/333,300,00 = 0.00097
 
 gamma= 0.00097
